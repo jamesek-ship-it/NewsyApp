@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0D0D0D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NewSee">
+<meta name="description" content="AI-powered personalized news briefings with avatar anchors">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>NewSee — Your News. Your Anchor.</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink:   #0D0D0D;
+    --paper: #F7F4EE;
+    --red:   #D62828;
+    --gold:  #C9A84C;
+    --mid:   #5C5C5C;
+    --rule:  #DDDAD3;
+    --green: #1B7A4A;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── MASTHEAD ── */
+  .masthead {
+    border-bottom: 3px solid var(--ink);
+    padding: 22px 48px 18px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .masthead-left { display: flex; flex-direction: column; gap: 2px; }
+  .eyebrow { font-size: 9.5px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mid); }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 88px; line-height: 0.85; letter-spacing: 0.02em; }
+  .logo .ee { color: var(--red); }
+  .tagline { font-family: 'DM Serif Display', serif; font-style: italic; font-size: 15px; color: var(--mid); margin-top: 5px; }
+  .masthead-right { text-align: right; font-size: 11px; color: var(--mid); line-height: 1.8; }
+  .live-dot { display: inline-block; width: 7px; height: 7px; background: var(--red); border-radius: 50%; margin-right: 5px; animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── TICKER ── */
+  .ticker { background: var(--ink); color: var(--paper); font-size: 10px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; padding: 7px 0; overflow: hidden; white-space: nowrap; }
+  .ticker-track { display: inline-block; animation: ticker 35s linear infinite; }
+  .ticker-track span { margin-right: 72px; }
+  .ticker-track span::before { content: '▸ '; color: var(--red); }
+  @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+  /* ── APP SHELL ── */
+  .app-shell { display: grid; grid-template-columns: 340px 1fr; flex: 1; }
+
+  /* ── SIDEBAR ── */
+  .sidebar { border-right: 1.5px solid var(--ink); padding: 28px 28px 40px; display: flex; flex-direction: column; gap: 28px; }
+  .sidebar-label { font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--red); border-top: 2px solid var(--red); padding-top: 6px; margin-bottom: 14px; display: block; }
+
+  /* Anchor grid */
+  .anchor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .anchor-btn { border: 1.5px solid var(--rule); background: white; padding: 12px 10px; cursor: pointer; text-align: center; transition: all 0.15s; position: relative; }
+  .anchor-btn:hover { border-color: var(--ink); }
+  .anchor-btn.selected { border-color: var(--red); background: #fff5f5; }
+  .anchor-btn.selected::after { content: '✓'; position: absolute; top: 4px; right: 6px; font-size: 9px; color: var(--red); font-weight: 700; }
+  .anchor-emoji { font-size: 24px; display: block; margin-bottom: 4px; }
+  .anchor-name { font-family: 'DM Serif Display', serif; font-size: 13px; line-height: 1.2; display: block; }
+  .anchor-vibe { font-size: 9px; color: var(--mid); display: block; margin-top: 2px; }
+
+  /* Topics */
+  .topics-list { display: flex; flex-direction: column; gap: 4px; }
+  .topic-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1.5px solid transparent; cursor: pointer; transition: all 0.12s; user-select: none; }
+  .topic-row:hover { border-color: var(--rule); background: white; }
+  .topic-row.active { border-color: var(--ink); background: white; }
+  .topic-check { width: 16px; height: 16px; border: 1.5px solid var(--rule); display: flex; align-items: center; justify-content: center; font-size: 9px; color: white; font-weight: 700; flex-shrink: 0; }
+  .topic-row.active .topic-check { border-color: var(--red); background: var(--red); }
+  .topic-label { font-size: 13px; font-weight: 500; flex: 1; }
+  .topic-emoji { font-size: 14px; }
+
+  .sports-sub { margin-left: 36px; display: none; flex-direction: column; gap: 3px; }
+  .sports-sub.visible { display: flex; }
+  .sub-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 1.5px solid transparent; cursor: pointer; transition: all 0.12s; user-select: none; }
+  .sub-row:hover { border-color: var(--rule); background: white; }
+  .sub-row.active { border-color: var(--rule); background: white; }
+  .sub-check { width: 14px; height: 14px; border: 1.5px solid var(--rule); display: flex; align-items: center; justify-content: center; font-size: 8px; color: var(--red); flex-shrink: 0; border-radius: 50%; }
+  .sub-row.active .sub-check { border-color: var(--red); background: #fff0f0; }
+  .sub-label { font-size: 12px; color: var(--mid); }
+
+  /* Comprehension dial */
+  .dial-row { display: flex; gap: 0; border: 1.5px solid var(--rule); }
+  .dial-btn { flex: 1; padding: 8px 4px; border: none; background: white; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mid); border-right: 1px solid var(--rule); transition: all 0.12s; }
+  .dial-btn:last-child { border-right: none; }
+  .dial-btn.active { background: var(--ink); color: var(--paper); }
+  .dial-btn:hover:not(.active) { background: var(--paper); color: var(--ink); }
+
+  /* Generate btn */
+  .generate-btn { width: 100%; background: var(--ink); color: var(--paper); border: none; padding: 16px 24px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.1em; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: auto; }
+  .generate-btn:hover:not(:disabled) { background: #2a2a2a; }
+  .generate-btn:disabled { background: #888; cursor: not-allowed; }
+  .btn-dot { width: 8px; height: 8px; background: var(--red); border-radius: 50%; flex-shrink: 0; }
+
+  /* ── MAIN CONTENT ── */
+  .main-content { display: flex; flex-direction: column; }
+
+  /* Empty state */
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 48px; text-align: center; gap: 16px; }
+  .empty-logo { font-family: 'Bebas Neue', sans-serif; font-size: 120px; line-height: 1; color: var(--rule); }
+  .empty-logo span { color: #e8d5d5; }
+  .empty-headline { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--mid); }
+  .empty-sub { font-size: 13px; color: #bbb; max-width: 300px; }
+
+  /* Loading */
+  .loading-state { flex: 1; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 60px 48px; gap: 20px; text-align: center; }
+  .loading-state.visible { display: flex; }
+  .loading-anchor { font-size: 64px; animation: bob 1s ease-in-out infinite alternate; }
+  @keyframes bob { from{transform:translateY(0)} to{transform:translateY(-12px)} }
+  .loading-headline { font-family: 'DM Serif Display', serif; font-size: 24px; }
+  .loading-steps { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+  .loading-step { font-size: 12px; color: var(--mid); display: flex; align-items: center; gap: 8px; opacity: 0.3; transition: opacity 0.4s; }
+  .loading-step.active { opacity: 1; color: var(--ink); }
+  .loading-step.done { opacity: 1; color: var(--green); }
+  .step-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+  /* Error */
+  .error-box { margin: 24px 40px; padding: 16px 20px; background: #fff5f5; border: 1.5px solid var(--red); font-size: 13px; color: var(--red); display: none; }
+  .error-box.visible { display: block; }
+
+  /* ── BRIEFING OUTPUT ── */
+  .briefing-output { display: none; flex-direction: column; }
+  .briefing-output.visible { display: flex; }
+
+  /* Anchor stage */
+  .anchor-stage { background: var(--ink); padding: 32px 40px; display: flex; align-items: center; gap: 32px; border-bottom: 3px solid var(--red); }
+  .anchor-visual { width: 96px; height: 96px; border-radius: 50%; background: #1a1a1a; border: 3px solid var(--red); display: flex; align-items: center; justify-content: center; font-size: 40px; flex-shrink: 0; position: relative; overflow: visible; }
+  .anchor-visual.speaking::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 3px solid var(--red); animation: ring 1.2s ease-out infinite; }
+  @keyframes ring { 0%{transform:scale(1);opacity:1} 100%{transform:scale(1.35);opacity:0} }
+  .anchor-info { flex: 1; }
+  .on-air { font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--red); display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .on-air-dot { width: 6px; height: 6px; background: var(--red); border-radius: 50%; animation: pulse 1.2s ease-in-out infinite; }
+  .anchor-on-name { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--paper); }
+  .anchor-on-vibe { font-size: 12px; color: #888; margin-top: 2px; }
+  .anchor-on-date { font-size: 11px; color: #666; margin-top: 6px; }
+  .topic-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .topic-pill { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 8px; border: 1px solid #444; color: #aaa; border-radius: 2px; }
+
+  /* Audio player */
+  .audio-wrap { background: var(--ink); padding: 0 40px 24px; }
+  .audio-player { display: flex; align-items: center; gap: 16px; }
+  .play-btn { width: 44px; height: 44px; background: var(--red); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; flex-shrink: 0; transition: background 0.15s; }
+  .play-btn:hover:not(:disabled) { background: #b02020; }
+  .play-btn:disabled { background: #444; cursor: not-allowed; }
+  .waveform { flex: 1; height: 36px; display: flex; align-items: center; gap: 2px; overflow: hidden; }
+  .wave-bar { width: 3px; background: #333; border-radius: 2px; transition: height 0.1s; flex-shrink: 0; }
+  .wave-bar.active { background: var(--red); }
+  .audio-time { font-size: 11px; color: #666; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .audio-note { font-size: 10px; color: #555; margin-top: 6px; font-style: italic; }
+
+  /* Script */
+  .script-area { padding: 32px 40px; flex: 1; }
+  .script-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1.5px solid var(--rule); }
+  .script-label { font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--red); }
+  .script-meta { font-size: 11px; color: var(--mid); }
+  .script-segment { margin-bottom: 22px; padding-bottom: 22px; border-bottom: 1px solid var(--rule); }
+  .script-segment:last-child { border-bottom: none; margin-bottom: 0; }
+  .seg-tag { font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mid); margin-bottom: 8px; display: block; }
+  .seg-text { font-family: 'DM Serif Display', serif; font-size: 16px; line-height: 1.75; }
+
+  /* Regen bar */
+  .regen-bar { padding: 16px 40px; border-top: 1.5px solid var(--rule); display: flex; align-items: center; justify-content: space-between; gap: 16px; background: white; }
+  .regen-note { font-size: 12px; color: var(--mid); }
+  .regen-btn { background: transparent; border: 1.5px solid var(--ink); color: var(--ink); padding: 8px 20px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.08em; cursor: pointer; transition: all 0.15s; }
+  .regen-btn:hover { background: var(--ink); color: var(--paper); }
+
+  /* Footer */
+  footer { border-top: 3px solid var(--ink); padding: 16px 48px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--mid); }
+  footer strong { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.05em; }
+  footer strong .ee { color: var(--red); }
+
+  /* Install banner */
+  #install-banner { display: none; background: var(--gold); color: white; padding: 10px 48px; font-size: 12px; font-weight: 600; align-items: center; justify-content: space-between; gap: 16px; }
+  #install-banner.visible { display: flex; }
+  .install-btn { background: white; color: var(--gold); border: none; padding: 5px 14px; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; border-radius: 3px; }
+  .dismiss-btn { background: transparent; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 16px; }
+
+  @media (max-width: 860px) {
+    .masthead { padding: 16px 20px; }
+    .logo { font-size: 60px; }
+    .app-shell { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1.5px solid var(--ink); }
+    .anchor-stage, .audio-wrap { padding-left: 20px; padding-right: 20px; }
+    .script-area, .regen-bar { padding: 20px; }
+    #install-banner { padding: 10px 20px; }
+    footer { padding: 14px 20px; flex-direction: column; gap: 4px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PWA INSTALL BANNER -->
+<div id="install-banner">
+  <span>📱 Add NewSee to your home screen for the full experience</span>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button class="install-btn" id="install-btn">Add to Home Screen</button>
+    <button class="dismiss-btn" onclick="document.getElementById('install-banner').classList.remove('visible')">✕</button>
+  </div>
+</div>
+
+<!-- MASTHEAD -->
+<div class="masthead">
+  <div class="masthead-left">
+    <span class="eyebrow">AI-Powered Personal News</span>
+    <div class="logo">NEW<span class="ee">SEE</span></div>
+    <div class="tagline">You don't just read the news. You see it.</div>
+  </div>
+  <div class="masthead-right">
+    <span class="live-dot"></span>LIVE BRIEFING ENGINE<br>
+    <span id="current-date"></span><br>
+    Powered by Claude + ElevenLabs
+  </div>
+</div>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-track">
+    <span>Select your interests</span><span>Choose your anchor</span>
+    <span>Get your briefing</span><span>Trump · Obama · Theo Von · Dave Portnoy</span>
+    <span>Markets · Real Estate · Crypto · Energy · Sports · Politics · Tech</span>
+    <span>Your news. Your voice. Every morning.</span>
+    <span>Select your interests</span><span>Choose your anchor</span>
+    <span>Get your briefing</span><span>Trump · Obama · Theo Von · Dave Portnoy</span>
+    <span>Markets · Real Estate · Crypto · Energy · Sports · Politics · Tech</span>
+    <span>Your news. Your voice. Every morning.</span>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <div>
+      <span class="sidebar-label">Choose Your Anchor</span>
+      <div class="anchor-grid">
+        <button class="anchor-btn selected" data-anchor="trump" onclick="selectAnchor(this)">
+          <span class="anchor-emoji">🇺🇸</span>
+          <span class="anchor-name">Donald Trump</span>
+          <span class="anchor-vibe">Bold · Direct</span>
+        </button>
+        <button class="anchor-btn" data-anchor="obama" onclick="selectAnchor(this)">
+          <span class="anchor-emoji">🎤</span>
+          <span class="anchor-name">Barack Obama</span>
+          <span class="anchor-vibe">Measured · Clear</span>
+        </button>
+        <button class="anchor-btn" data-anchor="theo" onclick="selectAnchor(this)">
+          <span class="anchor-emoji">🎙️</span>
+          <span class="anchor-name">Theo Von</span>
+          <span class="anchor-vibe">Raw · Funny</span>
+        </button>
+        <button class="anchor-btn" data-anchor="portnoy" onclick="selectAnchor(this)">
+          <span class="anchor-emoji">🍕</span>
+          <span class="anchor-name">Dave Portnoy</span>
+          <span class="anchor-vibe">Loud · Unfiltered</span>
+        </button>
+      </div>
+    </div>
+
+    <div>
+      <span class="sidebar-label">Your Interests</span>
+      <div class="topics-list">
+        <div class="topic-row active" onclick="toggleTopic(this,'markets')">
+          <div class="topic-check">✓</div><span class="topic-emoji">📈</span>
+          <span class="topic-label">Markets & Finance</span>
+        </div>
+        <div class="topic-row active" onclick="toggleTopic(this,'realestate')">
+          <div class="topic-check">✓</div><span class="topic-emoji">🏢</span>
+          <span class="topic-label">Real Estate</span>
+        </div>
+        <div class="topic-row active" onclick="toggleTopic(this,'crypto')">
+          <div class="topic-check">✓</div><span class="topic-emoji">₿</span>
+          <span class="topic-label">Crypto & Bitcoin</span>
+        </div>
+        <div class="topic-row" onclick="toggleTopic(this,'energy')">
+          <div class="topic-check"></div><span class="topic-emoji">⚡</span>
+          <span class="topic-label">Energy & AI Infrastructure</span>
+        </div>
+        <div class="topic-row" onclick="toggleTopic(this,'politics')">
+          <div class="topic-check"></div><span class="topic-emoji">🏛️</span>
+          <span class="topic-label">Politics</span>
+        </div>
+        <div class="topic-row" onclick="toggleTopic(this,'tech')">
+          <div class="topic-check"></div><span class="topic-emoji">💻</span>
+          <span class="topic-label">Tech & AI</span>
+        </div>
+        <div class="topic-row" id="sports-row" onclick="toggleSports(this)">
+          <div class="topic-check"></div><span class="topic-emoji">🏆</span>
+          <span class="topic-label">Sports</span>
+        </div>
+        <div class="sports-sub" id="sports-sub">
+          <div class="sub-row active" onclick="toggleSub(this,'local-sports',event)">
+            <div class="sub-check">✓</div><span class="sub-label">🏙️ Local Sports</span>
+          </div>
+          <div class="sub-row active" onclick="toggleSub(this,'global-sports',event)">
+            <div class="sub-check">✓</div><span class="sub-label">🌍 Global Sports</span>
+          </div>
+        </div>
+        <div class="topic-row" onclick="toggleTopic(this,'health')">
+          <div class="topic-check"></div><span class="topic-emoji">🧬</span>
+          <span class="topic-label">Health & Biohacking</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <span class="sidebar-label">Explain It Like I'm…</span>
+      <div class="dial-row">
+        <button class="dial-btn" data-level="expert" onclick="selectLevel(this)">Expert</button>
+        <button class="dial-btn active" data-level="normal" onclick="selectLevel(this)">Normal</button>
+        <button class="dial-btn" data-level="simple" onclick="selectLevel(this)">Simple</button>
+      </div>
+    </div>
+
+    <button class="generate-btn" id="generate-btn" onclick="generateBriefing()">
+      <span class="btn-dot"></span>GENERATE MY BRIEFING
+    </button>
+
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <div class="empty-state" id="empty-state">
+      <div class="empty-logo">NEW<span>SEE</span></div>
+      <div class="empty-headline">Your briefing is one click away.</div>
+      <p class="empty-sub">Select your interests, pick your anchor, and hit Generate.</p>
+    </div>
+
+    <div class="loading-state" id="loading-state">
+      <div class="loading-anchor" id="loading-emoji">🇺🇸</div>
+      <div class="loading-headline">Writing your briefing…</div>
+      <div class="loading-steps">
+        <div class="loading-step" id="step-1"><span class="step-dot"></span>Reading today's news</div>
+        <div class="loading-step" id="step-2"><span class="step-dot"></span>Filtering your topics</div>
+        <div class="loading-step" id="step-3"><span class="step-dot"></span>Writing your script</div>
+        <div class="loading-step" id="step-4"><span class="step-dot"></span>Sending to your anchor</div>
+        <div class="loading-step" id="step-5"><span class="step-dot"></span>Rendering audio</div>
+      </div>
+    </div>
+
+    <div class="error-box" id="error-box"></div>
+
+    <div class="briefing-output" id="briefing-output">
+
+      <div class="anchor-stage">
+        <div class="anchor-visual" id="anchor-visual">🇺🇸</div>
+        <div class="anchor-info">
+          <div class="on-air"><span class="on-air-dot"></span>ON AIR</div>
+          <div class="anchor-on-name" id="anchor-on-name">Donald Trump</div>
+          <div class="anchor-on-vibe" id="anchor-on-vibe">Bold · Direct · No filter</div>
+          <div class="anchor-on-date" id="anchor-on-date"></div>
+          <div class="topic-pills" id="topic-pills"></div>
+        </div>
+      </div>
+
+      <div class="audio-wrap">
+        <div class="audio-player">
+          <button class="play-btn" id="play-btn" onclick="togglePlay()" disabled>▶</button>
+          <div class="waveform" id="waveform"></div>
+          <span class="audio-time" id="audio-time">0:00 / 0:00</span>
+        </div>
+        <div class="audio-note" id="audio-note"></div>
+        <audio id="audio-el" style="display:none;"></audio>
+      </div>
+
+      <div class="script-area">
+        <div class="script-header">
+          <span class="script-label">Briefing Script</span>
+          <span class="script-meta" id="script-meta"></span>
+        </div>
+        <div id="script-segments"></div>
+      </div>
+
+      <div class="regen-bar">
+        <span class="regen-note">Generated <span id="gen-time"></span></span>
+        <button class="regen-btn" onclick="generateBriefing()">↻ REGENERATE</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div><strong>NEW<span class="ee">SEE</span></strong> — Beta</div>
+  <div>Your news. Your anchor. Every morning.</div>
+  <div>Powered by Claude + ElevenLabs</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ── SUPABASE ──────────────────────────────────────────────────────────────────
+const SUPA_URL = 'https://rjavmckilfvzlbezxufx.supabase.co';
+const SUPA_KEY = 'sb_publishable_3BOSCgeWqMa38rz8sdUZpw_1KefqLLN';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+function getDeviceId() {
+  let id = localStorage.getItem('newsee_device_id');
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem('newsee_device_id', id); }
+  return id;
+}
+
+async function loadProfile() {
+  try {
+    const { data } = await supa.from('profiles').select('*').eq('device_id', getDeviceId()).single();
+    if (!data) return;
+    if (data.anchor) {
+      S.anchor = data.anchor;
+      document.querySelectorAll('.anchor-btn').forEach(b => {
+        b.classList.toggle('selected', b.dataset.anchor === data.anchor);
+      });
+      document.getElementById('loading-emoji').textContent = ANCHORS[data.anchor].emoji;
+    }
+    if (data.level) {
+      S.level = data.level;
+      document.querySelectorAll('.dial-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.level === data.level);
+      });
+    }
+    if (data.interests?.length) {
+      S.topics = new Set(data.interests);
+      document.querySelectorAll('[data-topic]').forEach(row => {
+        const id = row.dataset.topic;
+        if (S.topics.has(id)) {
+          row.classList.add('active');
+          const chk = row.querySelector('.topic-check');
+          if (chk) chk.textContent = '✓';
+        }
+      });
+      if (S.topics.has('sports') || S.topics.has('local-sports') || S.topics.has('global-sports')) {
+        S.sportsOn = true;
+        document.getElementById('sports-sub')?.classList.add('visible');
+      }
+    }
+    if (data.sports_subs?.length) {
+      S.subs = new Set(data.sports_subs);
+    }
+  } catch (e) { console.warn('Profile load skipped:', e.message); }
+}
+
+async function saveProfile() {
+  try {
+    await supa.from('profiles').upsert({
+      device_id: getDeviceId(),
+      anchor: S.anchor,
+      level: S.level,
+      interests: [...S.topics],
+      sports_subs: [...S.subs],
+    }, { onConflict: 'device_id' });
+  } catch (e) { console.warn('Profile save skipped:', e.message); }
+}
+
+// ── ANCHOR CONFIG ─────────────────────────────────────────────────────────────
+const ANCHORS = {
+  trump: {
+    name: 'Donald Trump', vibe: 'Bold · Direct · No filter', emoji: '🇺🇸',
+    voiceId: 'SAz9YHcvj6GT2YYXdXww',
+    style: `You are Donald Trump delivering a morning news briefing. Be bold, direct, and confident. Use Trump's signature speech patterns: short punchy sentences, superlatives like "tremendous", "beautiful", "disaster", first-person bravado. Make the news feel personal and winning.`,
+  },
+  obama: {
+    name: 'Barack Obama', vibe: 'Measured · Eloquent · Presidential', emoji: '🎤',
+    voiceId: 'N2lVS1w4EtoT3dr4eOWO',
+    style: `You are Barack Obama delivering a morning news briefing. Be measured, thoughtful, and eloquent. Use Obama's rhetorical style: build to a point, acknowledge complexity, use phrases like "look," "here's the thing," "let me be clear." End segments with hopeful, forward-looking framing.`,
+  },
+  theo: {
+    name: 'Theo Von', vibe: 'Raw · Funny · Podcast energy', emoji: '🎙️',
+    voiceId: 'TxGEqnHWrfWFTfGW9XjX',
+    style: `You are Theo Von delivering a morning news briefing like it's your podcast. Be raw, funny, and totally conversational. Go on small tangents, make weird observations, react to things like a regular dude hearing it for the first time. Throw in dark humor and genuine surprise.`,
+  },
+  portnoy: {
+    name: 'Dave Portnoy', vibe: 'Loud · Unfiltered · Barstool', emoji: '🍕',
+    voiceId: 'yoZ06aMxZJJ28mfd3POQ',
+    style: `You are Dave Portnoy delivering a morning news briefing in full Barstool Sports mode. Be loud, opinionated, and completely unfiltered. Take strong immediate takes, call things out, use sports references even for non-sports stories. Every story has a winner and a loser. Zero hedging.`,
+  },
+};
+
+const TOPIC_LABELS = {
+  markets: 'Markets & Finance', realestate: 'Real Estate',
+  crypto: 'Crypto & Bitcoin', energy: 'Energy & AI Infrastructure',
+  politics: 'Politics', tech: 'Tech & AI', sports: 'Sports',
+  'local-sports': 'Local Sports', 'global-sports': 'Global Sports',
+  health: 'Health & Biohacking',
+};
+
+const LEVEL_LABELS = { expert: 'expert level', normal: 'general audience', simple: 'plain English, like explaining to a smart teenager' };
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const S = {
+  anchor: 'trump',
+  topics: new Set(['markets', 'realestate', 'crypto']),
+  subs: new Set(['local-sports', 'global-sports']),
+  sportsOn: false,
+  level: 'normal',
+  audioUrl: null,
+  playing: false,
+  waveTimer: null,
+};
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US',
+    { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  buildWaveform();
+  initPWA();
+  await loadProfile();
+});
+
+// ── PWA INSTALL ───────────────────────────────────────────────────────────────
+let deferredPrompt = null;
+function initPWA() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(console.warn);
+  }
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('install-banner').classList.add('visible');
+  });
+  document.getElementById('install-btn').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    document.getElementById('install-banner').classList.remove('visible');
+  });
+}
+
+// ── ANCHOR / TOPIC TOGGLES ────────────────────────────────────────────────────
+function selectAnchor(btn) {
+  document.querySelectorAll('.anchor-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  S.anchor = btn.dataset.anchor;
+  document.getElementById('loading-emoji').textContent = ANCHORS[S.anchor].emoji;
+  saveProfile();
+}
+
+function selectLevel(btn) {
+  document.querySelectorAll('.dial-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  S.level = btn.dataset.level;
+  saveProfile();
+}
+
+function toggleTopic(row, id) {
+  row.classList.toggle('active');
+  const chk = row.querySelector('.topic-check');
+  if (row.classList.contains('active')) { S.topics.add(id); chk.textContent = '✓'; }
+  else { S.topics.delete(id); chk.textContent = ''; }
+  saveProfile();
+}
+
+function toggleSports(row) {
+  row.classList.toggle('active');
+  S.sportsOn = row.classList.contains('active');
+  const chk = row.querySelector('.topic-check');
+  const sub = document.getElementById('sports-sub');
+  if (S.sportsOn) { S.topics.add('sports'); chk.textContent = '✓'; sub.classList.add('visible'); }
+  else { S.topics.delete('sports'); chk.textContent = ''; sub.classList.remove('visible'); }
+  saveProfile();
+}
+
+function toggleSub(row, id, e) {
+  e.stopPropagation();
+  row.classList.toggle('active');
+  const chk = row.querySelector('.sub-check');
+  if (row.classList.contains('active')) { S.subs.add(id); chk.textContent = '✓'; }
+  else { S.subs.delete(id); chk.textContent = ''; }
+  saveProfile();
+}
+
+function getTopics() {
+  const t = [...S.topics];
+  const idx = t.indexOf('sports');
+  if (idx !== -1 && S.subs.size > 0) t.splice(idx, 1, ...[...S.subs]);
+  return t;
+}
+
+// ── GENERATE ──────────────────────────────────────────────────────────────────
+async function generateBriefing() {
+  const topics = getTopics();
+  if (!topics.length) { showError('Select at least one interest topic.'); return; }
+
+  cleanupAudio();
+  showView('loading');
+  clearError();
+  setStep(1,'active');
+
+  const anchor = ANCHORS[S.anchor];
+
+  try {
+    await wait(500); setStep(1,'done'); setStep(2,'active');
+    await wait(400); setStep(2,'done'); setStep(3,'active');
+
+    const script = await callClaude(anchor, topics);
+    setStep(3,'done'); setStep(4,'active');
+
+    let audioOk = false;
+    try {
+      await wait(300); setStep(4,'done'); setStep(5,'active');
+      const blob = await callElevenLabs(script.fullText, anchor.voiceId);
+      S.audioUrl = URL.createObjectURL(blob);
+      setStep(5,'done');
+      audioOk = true;
+    } catch (ae) {
+      console.warn('Audio failed:', ae.message);
+      setStep(4,'done'); setStep(5,'done');
+    }
+
+    await wait(300);
+    renderOutput(anchor, topics, script, audioOk);
+    showView('output');
+
+  } catch (err) {
+    console.error(err);
+    showError('Generation failed: ' + (err.message || 'Unknown error.'));
+    showView('empty');
+  }
+}
+
+async function callClaude(anchor, topics) {
+  const topicList = topics.map(t => TOPIC_LABELS[t] || t).join(', ');
+  const today = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+  const levelNote = LEVEL_LABELS[S.level];
+
+  const prompt = `You are generating a personalized morning news briefing for NewSee, an AI news platform. Today is ${today}.
+
+${anchor.style}
+
+The user selected these topics: ${topicList}
+Comprehension level: ${levelNote} — adjust vocabulary and depth accordingly.
+
+Write a 4-5 minute spoken briefing (~650 words) covering plausible, realistic today's news in these areas based on current trends and your knowledge. Frame it as actual today's news.
+
+Structure as distinct segments, one per topic. Each segment 2-4 sentences. Include a brief intro and sign-off.
+
+Respond ONLY with this exact JSON, no other text or markdown:
+{
+  "intro": "Opening greeting in anchor voice",
+  "segments": [
+    { "topic": "Topic Name", "text": "2-4 sentence segment" }
+  ],
+  "signoff": "Closing sign-off in anchor voice"
+}`;
+
+  const res = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || data.error || `Error ${res.status}`);
+
+  const raw = data.content[0].text.trim().replace(/^```json\s*/i,'').replace(/```\s*$/,'').trim();
+  const parsed = JSON.parse(raw);
+  parsed.fullText = [parsed.intro, ...parsed.segments.map(s => s.text), parsed.signoff].join(' ');
+  return parsed;
+}
+
+async function callElevenLabs(text, voiceId) {
+  const res = await fetch('/api/audio', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ voiceId, text }),
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.detail?.message || `ElevenLabs error ${res.status}`);
+  }
+  return res.blob();
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderOutput(anchor, topics, script, audioOk) {
+  document.getElementById('anchor-visual').textContent = anchor.emoji;
+  document.getElementById('anchor-on-name').textContent = anchor.name;
+  document.getElementById('anchor-on-vibe').textContent = anchor.vibe;
+  document.getElementById('anchor-on-date').textContent = new Date().toLocaleDateString('en-US',
+    { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+
+  document.getElementById('topic-pills').innerHTML =
+    topics.map(t => `<span class="topic-pill">${TOPIC_LABELS[t]||t}</span>`).join('');
+
+  let html = `<div class="script-segment"><span class="seg-tag">Intro</span><div class="seg-text">${esc(script.intro)}</div></div>`;
+  for (const s of script.segments)
+    html += `<div class="script-segment"><span class="seg-tag">${esc(s.topic)}</span><div class="seg-text">${esc(s.text)}</div></div>`;
+  html += `<div class="script-segment"><span class="seg-tag">Sign-off</span><div class="seg-text">${esc(script.signoff)}</div></div>`;
+  document.getElementById('script-segments').innerHTML = html;
+
+  const wc = script.fullText.split(' ').length;
+  document.getElementById('script-meta').textContent = `~${wc} words · ~${Math.round(wc/150)} min`;
+  document.getElementById('gen-time').textContent = new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+
+  const audioEl = document.getElementById('audio-el');
+  const note = document.getElementById('audio-note');
+  if (audioOk && S.audioUrl) {
+    audioEl.src = S.audioUrl;
+    audioEl.onloadedmetadata = () => { updateTime(); animateWave(); };
+    audioEl.ontimeupdate = updateTime;
+    audioEl.onended = () => {
+      S.playing = false;
+      document.getElementById('play-btn').textContent = '▶';
+      document.getElementById('anchor-visual').classList.remove('speaking');
+      stopWave();
+    };
+    document.getElementById('play-btn').disabled = false;
+    note.textContent = '';
+  } else {
+    document.getElementById('play-btn').disabled = true;
+    note.textContent = 'Audio unavailable — check ElevenLabs configuration.';
+  }
+}
+
+// ── AUDIO ─────────────────────────────────────────────────────────────────────
+function togglePlay() {
+  const audio = document.getElementById('audio-el');
+  const btn = document.getElementById('play-btn');
+  const vis = document.getElementById('anchor-visual');
+  if (S.playing) {
+    audio.pause(); btn.textContent = '▶'; vis.classList.remove('speaking'); stopWave(); S.playing = false;
+  } else {
+    audio.play(); btn.textContent = '⏸'; vis.classList.add('speaking'); startWave(); S.playing = true;
+  }
+}
+
+function updateTime() {
+  const a = document.getElementById('audio-el');
+  if (!isNaN(a.duration))
+    document.getElementById('audio-time').textContent = `${fmt(a.currentTime)} / ${fmt(a.duration)}`;
+}
+
+function fmt(s) { return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`; }
+
+function buildWaveform() {
+  const wf = document.getElementById('waveform');
+  wf.innerHTML = '';
+  for (let i = 0; i < 52; i++) {
+    const b = document.createElement('div');
+    b.className = 'wave-bar';
+    b.style.height = (8 + Math.random() * 18) + 'px';
+    wf.appendChild(b);
+  }
+}
+
+function startWave() {
+  const bars = document.querySelectorAll('.wave-bar');
+  S.waveTimer = setInterval(() => {
+    bars.forEach(b => { b.style.height = (5 + Math.random() * 28) + 'px'; b.classList.toggle('active', Math.random() > 0.35); });
+  }, 110);
+}
+
+function stopWave() {
+  if (S.waveTimer) clearInterval(S.waveTimer);
+  document.querySelectorAll('.wave-bar').forEach(b => b.classList.remove('active'));
+}
+
+function animateWave() {
+  document.querySelectorAll('.wave-bar').forEach((b, i) => { b.style.height = (8 + Math.sin(i * 0.45) * 10 + 8) + 'px'; });
+}
+
+function cleanupAudio() {
+  stopWave();
+  const a = document.getElementById('audio-el');
+  a.pause(); a.src = '';
+  if (S.audioUrl) URL.revokeObjectURL(S.audioUrl);
+  S.audioUrl = null; S.playing = false;
+  document.getElementById('play-btn').textContent = '▶';
+  document.getElementById('play-btn').disabled = true;
+  document.getElementById('anchor-visual').classList.remove('speaking');
+  buildWaveform();
+}
+
+// ── UI HELPERS ────────────────────────────────────────────────────────────────
+function showView(which) {
+  document.getElementById('empty-state').style.display = which === 'empty' ? 'flex' : 'none';
+  document.getElementById('loading-state').classList.toggle('visible', which === 'loading');
+  document.getElementById('briefing-output').classList.toggle('visible', which === 'output');
+  const btn = document.getElementById('generate-btn');
+  btn.disabled = which === 'loading';
+  btn.innerHTML = which === 'loading' ? '⏳ GENERATING…' : '<span class="btn-dot"></span>GENERATE MY BRIEFING';
+}
+
+function setStep(n, s) {
+  const el = document.getElementById('step-' + n);
+  el.classList.remove('active','done');
+  if (s) el.classList.add(s);
+}
+
+function showError(msg) { const el = document.getElementById('error-box'); el.textContent = '⚠ ' + msg; el.classList.add('visible'); }
+function clearError() { document.getElementById('error-box').classList.remove('visible'); }
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>
