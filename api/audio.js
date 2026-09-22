@@ -1,18 +1,19 @@
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '4mb',
+    },
+  },
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const key = process.env.ELEVENLABS_API_KEY;
   if (!key) return res.status(401).json({ error: 'ElevenLabs API key not configured' });
 
-  // Parse body manually if needed (Vercel sometimes doesn't auto-parse)
-  let body = req.body;
-  if (typeof body === 'string') {
-    try { body = JSON.parse(body); } catch { body = {}; }
-  }
-  if (!body) body = {};
-
-  const { voiceId, text, voiceSettings } = body;
-  if (!voiceId || !text) return res.status(400).json({ error: 'voiceId and text required', got: { voiceId, textLen: text?.length } });
+  const { voiceId, text, voiceSettings } = req.body || {};
+  if (!voiceId || !text) return res.status(400).json({ error: 'voiceId and text required', voiceId, textLen: text?.length });
 
   try {
     const response = await fetch(
